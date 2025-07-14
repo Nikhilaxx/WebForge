@@ -5,8 +5,15 @@ import {z} from "zod";
 
 export const messagesRouter = createTRPCRouter({
   getMany: baseProcedure
-  .query(async()=>{
+  .input(z.object({
+      projectId : z.string().min(1, { message: "Project ID is required" }),
+    }),
+  )
+  .query(async({input})=>{
     const messages = await prisma.message.findMany({
+      where: {
+        projectId: input.projectId,
+      },
       orderBy:{
         updatedAt:"desc"
       },
@@ -22,9 +29,6 @@ export const messagesRouter = createTRPCRouter({
     }),
   )
   .mutation(async ({ input }) => {
-    // Here you would typically interact with your database or service to create a message
-    // For example, using Prisma:
-    // return await ctx.prisma.message.create({ data: input });
     const createdMessage=await prisma.message.create({
       data:{
         projectId: input.projectId,
