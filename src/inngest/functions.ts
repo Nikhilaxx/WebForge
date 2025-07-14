@@ -156,6 +156,7 @@ const sandboxUrl=await step.run("get-sandbox-url", async () => {
       if(isError){
         return await prisma.message.create({
           data:{
+            projectId: event.data.projectId,
             content: "Something went wrong.Please try again later",
             role:"ASSISTANT",
             type:"ERROR",
@@ -164,6 +165,7 @@ const sandboxUrl=await step.run("get-sandbox-url", async () => {
       }
       return await prisma.message.create({
         data:{
+          projectId: event.data.projectId,
           content: result.state.data.Summary,
           role:"ASSISTANT",
           type:"RESULT",
