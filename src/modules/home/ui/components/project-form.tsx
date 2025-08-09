@@ -10,10 +10,9 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Form ,FormField} from "@/components/ui/form";
+import { useRouter } from "next/navigation";
+import { PROJECT_TEMPLATES } from "../../constants";
 
-interface Props{
-    projectId: string
-}
 
 const formSchema = z.object({
     value:
@@ -22,11 +21,18 @@ const formSchema = z.object({
       .max(10000,{message:"Value is too long"}),
 })
 
-export const MessageForm = ({projectId}:Props) => {
+export const ProjectForm = () => {
+    const router = useRouter();
     const [isFocused, setIsFocused] = useState(false);
-    const showUsage = false;
     const trpc=useTRPC();
     const queryClient=useQueryClient();
+    const onSelect =  (value: string) => {
+        form.setValue("value", value,{
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true
+        });
+    }
     const form=useForm<z.infer<typeof formSchema>>
     ({resolver:
         zodResolver(formSchema),
@@ -34,34 +40,33 @@ export const MessageForm = ({projectId}:Props) => {
     {value:""},
     });
 
-    const createMessage=useMutation(trpc.messages.create.mutationOptions({
-        onSuccess: () => {
-            form.reset();
+    const createProject=useMutation(trpc.projects.create.mutationOptions({
+        onSuccess: (data) => {
             queryClient.invalidateQueries
-            (trpc.messages.getMany.queryOptions({ projectId }),
+            (trpc.projects.getMany.queryOptions(),
         );
+            router.push(`/projects/${data.id}`);    
         },
         onError: (error) => {
             toast.error(error.message);
         },
     }));
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-       await createMessage.mutateAsync({
+       await createProject.mutateAsync({
            value:values.value,
-           projectId:projectId
        })
     };
-    const isPending = createMessage.isPending;
+    const isPending = createProject.isPending;
     const isButtonDisabled = isPending || !form.formState.isValid;
     return (
 
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(
+           <section className="space-y-6">
+             <form onSubmit={form.handleSubmit(
                 onSubmit)}
                 className={cn(
                     "relative border p-4 pt-1 rounded-xl  bg-sidebar dark:bg-sidebar transition-all",
                     isFocused && "shadow-xs",
-                    showUsage && "rounded-t-none"
                 )}>
                     <FormField 
                     control={form.control}
@@ -90,7 +95,7 @@ export const MessageForm = ({projectId}:Props) => {
                             <kbd className="ml-auto pointer-events-none inline-flex 
                             h-5 select-none items-center gap-1 rounded border bg-muted 
                             px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                                <span>&#8984;</span> + Enter
+                                <span>&#8984;</span>Enter
 
                             </kbd>
                             &nbsp;to submit
@@ -113,6 +118,20 @@ export const MessageForm = ({projectId}:Props) => {
                         </Button>
                         </div> 
             </form>
+           
+            <div className="flex-wrap justify-center gap-2 hidden md:flex max-w-3xl">
+                {PROJECT_TEMPLATES.map((template) => (
+                    <Button 
+                    key={template.title} 
+                    variant="outline"
+                    size="sm"
+                    className="bg-white dark:bg-sidebar"
+                    onClick={() => onSelect(template.prompt)}>
+                        {template.emoji}{template.title}
+                    </Button>
+                ))}
+            </div>
+            </section>
             </Form>
     )
 }

@@ -6,6 +6,11 @@ import {generateSlug} from "random-word-slugs"
 import { TRPCError } from "@trpc/server";
 
 export const projectsRouter = createTRPCRouter({
+  getMany: baseProcedure.query(async () => {
+    return await prisma.project.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }),
   getOne: baseProcedure
   .input(z.object({
       id: z.string().min(1, { message: "Project ID is required" }),
